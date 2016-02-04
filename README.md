@@ -1,4 +1,4 @@
-# rustbar
+# Wordnet stemmer
 Wordnet stemmer for rust, based on python nltk implementation.
 
 You will need to download wordnet database files here:

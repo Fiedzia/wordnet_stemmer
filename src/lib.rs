@@ -11,7 +11,7 @@ use std::vec::Vec;
 use farmhash::FarmHasher;
 
 #[derive(PartialEq)]
-enum Part {
+pub enum Part {
     Noun=0,
     Verb=1,
     Adj=2,
@@ -40,10 +40,10 @@ impl Part {
 }
 
     
-const NOUN:usize = 0;
-const VERB:usize = 1;
-const ADJ:usize = 2;
-const ADV:usize = 3;
+pub const NOUN:usize = 0;
+pub const VERB:usize = 1;
+pub const ADJ:usize = 2;
+pub const ADV:usize = 3;
 
 const PARTS:[usize; 4] = [NOUN, VERB, ADJ, ADV];
 const WN_FILES:[[&'static str; 2]; 4] = [
@@ -68,7 +68,7 @@ type LemmaPosOffsetMap = HashMap<String, HashMap<usize, Vec<i32>>>;
 type FileMap = HashMap<char, String>;
 
 
-struct WordnetStemmer {
+pub struct WordnetStemmer {
     wordlist: Wordlist,
     exceptions: Exceptions,
     substitutions: Substitutions,
@@ -78,7 +78,7 @@ struct WordnetStemmer {
 
 impl WordnetStemmer {
 
-    fn new(basedir: &str) -> Result<WordnetStemmer> {
+    pub fn new(basedir: &str) -> Result<WordnetStemmer> {
         let mut wn = WordnetStemmer {
             basedir: basedir.to_owned(),
             wordlist: Vec::new(),
@@ -291,7 +291,7 @@ impl WordnetStemmer {
         vec![]
     }
     
-    fn lemma(&self, part: usize, word: String) -> String {
+    pub fn lemma(&self, part: usize, word: String) -> String {
         let lemmas = self.morphy(part, &word);
         if lemmas.len() > 0 {
             let mut w_idx = 0;

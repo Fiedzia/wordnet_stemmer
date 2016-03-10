@@ -1,14 +1,8 @@
-#![feature(hashmap_hasher)]
-
-extern crate farmhash;
-
 use std::collections::{HashMap, HashSet, hash_map};
-use std::collections::hash_state::DefaultState;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Result};
+use std::io::{self, BufRead, BufReader, ErrorKind, Result};
 use std::vec::Vec;
 
-use farmhash::FarmHasher;
 
 #[derive(PartialEq)]
 pub enum Part {
@@ -17,6 +11,7 @@ pub enum Part {
     Adj=2,
     Adv=3
 }
+
 impl Part {
 
     fn as_usize(&self) -> usize {
@@ -60,14 +55,14 @@ static STR_ADV: char = 'r';
 static STR_NOUN: char = 'n';
 static STR_VERB: char = 'v';*/
 
-type FastHashMap = HashMap<String, String, DefaultState<FarmHasher>>;
+type FastHashMap = HashMap<String, String>;
 type Wordlist = Vec<FastHashMap>;
-type Exceptions = Vec<HashMap<String, Vec<String>, DefaultState<FarmHasher>>>;
+type Exceptions = Vec<HashMap<String, Vec<String>>>;
 type Substitutions = Vec<Vec<Vec<&'static str>>> ;
 type LemmaPosOffsetMap = HashMap<String, HashMap<usize, Vec<i32>>>;
 type FileMap = HashMap<char, String>;
 
-
+#[derive(Clone,Debug)]
 pub struct WordnetStemmer {
     wordlist: Wordlist,
     exceptions: Exceptions,
@@ -147,7 +142,13 @@ impl WordnetStemmer {
         pair: [&str; 2]
         ) -> Result<()> {
         let fname:String = format!("{}{}", self.basedir, pair[0]);
-        let mut f = try!(File::open(fname));
+        let mut f = match File::open(fname.clone()) {
+            Ok(v) => v,
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => return Err(io::Error::new(ErrorKind::Other, format!("WordnetStemmer: could not open or read file {}", fname))),
+                _ => return Err(e)
+            }
+        };
         let mut br = BufReader::new(f);
         for line_result in br.lines() {
             let line = try!(line_result);
@@ -181,7 +182,13 @@ impl WordnetStemmer {
        for variant in [Part::Noun, Part::Verb, Part::Adj, Part::Adv].iter() {
        //for suffix in WordnetStemmer::filemap().values(){
             let fname:String = format!("{}/index.{}", self.basedir, variant.as_str());
-            let f = try!(File::open(fname));
+            let f = match File::open(fname.clone()) {
+                Ok(v) => v,
+                Err(e) => match e.kind() {
+                    ErrorKind::NotFound => return Err(io::Error::new(ErrorKind::Other, format!("WordnetStemmer: could not open or read file {}", fname))),
+                    _ => return Err(e)
+                }
+            };
             let br = BufReader::new(f);
             for line_result in br.lines() {
                 let line = try!(line_result);
@@ -229,17 +236,17 @@ impl WordnetStemmer {
     fn apply_rules(&self, part: usize, words: &Vec<String>
     ) -> Vec<String>{
         let mut result = vec![];
-        for pair in self.substitutions[part].iter() {
-    
-            let old: &str = (*pair)[0];
-            let new: &str = (*pair)[1];
-    
-            for word in words.iter() {
-                if word.as_str().ends_with(old){
-                    let w: String = (word.chars().take(word.len() - old.len()).collect::<String>()) + &new;
+        for word in words.iter() {
+            for pair in self.substitutions[part].iter(){
+                let old: &str = (*pair)[0];
+                let new: &str = (*pair)[1];
+                if word.ends_with(old){
+                    let w: String = (word.chars().take(word.chars().count() - old.chars().count()).collect::<String>()) + &new;
                     result.push(w);
+
                 }
             }
+
         }
         result
     }
@@ -280,6 +287,7 @@ impl WordnetStemmer {
                 return results
             }
         }
+        
         while forms.len() > 0 {
             forms = self.apply_rules(part, &forms);
             let results = self.filter_forms(&forms, part);
@@ -287,11 +295,10 @@ impl WordnetStemmer {
                 return results
             }
         }
-    
         vec![]
     }
     
-    pub fn lemma(&self, part: usize, word: String) -> String {
+    pub fn lemma(&self, part: usize, word: &str) -> String {
         let lemmas = self.morphy(part, &word);
         if lemmas.len() > 0 {
             let mut w_idx = 0;
@@ -304,7 +311,16 @@ impl WordnetStemmer {
                 }
             }
             lemmas[w_idx].to_owned()
-        } else { word.clone() }
+        } else { word.to_owned() }
+    }
+
+    pub fn lemma_phrase(&self, part: usize, phrase: &str) -> String {
+        phrase
+        .to_lowercase()
+        .split_whitespace()
+        .map(|word| self.lemma(part, word))
+        .collect::<Vec<String>>()
+        .join(" ")
     }
 }
 

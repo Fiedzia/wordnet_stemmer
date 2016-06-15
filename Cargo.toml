@@ -1,6 +1,6 @@
 [package]
 name = "wordnet_stemmer"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Maciej Dziardziel <fiedzia@gmail.com>"]
 description = "Wordnet stemmer"
 keywords = ["wordnet", "stemmer", "stemming", "nltk", "nlp"]

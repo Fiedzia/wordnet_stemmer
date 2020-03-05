@@ -60,7 +60,7 @@ type Wordlist = Vec<FastHashMap>;
 type Exceptions = Vec<HashMap<String, Vec<String>>>;
 type Substitutions = Vec<Vec<Vec<&'static str>>> ;
 type LemmaPosOffsetMap = HashMap<String, HashMap<usize, Vec<i32>>>;
-type FileMap = HashMap<char, String>;
+//type FileMap = HashMap<char, String>;
 
 #[derive(Clone,Debug)]
 pub struct WordnetStemmer {
@@ -120,7 +120,7 @@ impl WordnetStemmer {
             wn.exceptions.push(Default::default());
         }
         for part in PARTS.iter() {
-            try!(wn.load(*part, WN_FILES[*part]));
+            wn.load(*part, WN_FILES[*part])?;
         }
 
       
@@ -151,7 +151,7 @@ impl WordnetStemmer {
         };
         let mut br = BufReader::new(f);
         for line_result in br.lines() {
-            let line = try!(line_result);
+            let line = line_result?;
             if line.starts_with("  ") {
                 continue
             }
@@ -162,10 +162,10 @@ impl WordnetStemmer {
     
     
         let fname = format!("{}{}", self.basedir, pair[1]);
-        f = try!(File::open(fname));
+        f = File::open(fname)?;
         br = BufReader::new(f);
         for line_result in br.lines() {
-            let line: String = try!(line_result);
+            let line: String = line_result?;
             if line.starts_with("  ") {
                 continue
             }
@@ -191,7 +191,7 @@ impl WordnetStemmer {
             };
             let br = BufReader::new(f);
             for line_result in br.lines() {
-                let line = try!(line_result);
+                let line = line_result?;
                 if line.starts_with(" ") {
                     continue
                 }
@@ -206,7 +206,7 @@ impl WordnetStemmer {
                 let n_pointers = iter.next().unwrap().parse::<i32>().unwrap();
 
                 // same as number of synsets
-                let _ = iter.nth((n_pointers as usize)).unwrap().parse::<i32>().unwrap(); //n_senses
+                let _ = iter.nth(n_pointers as usize).unwrap().parse::<i32>().unwrap(); //n_senses
 
                 // get number of senses ranked according to frequency
                 let _ =iter.next();
